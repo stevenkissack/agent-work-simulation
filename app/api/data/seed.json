@@ -1,0 +1,12 @@
+{
+  "sites": [
+    { "id": "s_sydney", "name": "Sydney North", "timezone": "Australia/Sydney" },
+    { "id": "s_perth",  "name": "Perth Depot",  "timezone": "Australia/Perth"  }
+  ],
+  "tasks": [
+    { "id": "t1", "siteId": "s_sydney", "title": "Chase concrete pour schedule",        "description": "Confirm slab pour with the subcontractor.", "priority": "high",   "status": "todo", "dueAt": "2026-09-15T08:00:00+10:00" },
+    { "id": "t2", "siteId": "s_perth",  "title": "Order safety signage for site entry", "description": "Two new signs for the east gate.",          "priority": "medium", "status": "todo", "dueAt": "2026-09-15T07:00:00+08:00" },
+    { "id": "t4", "siteId": "s_sydney", "title": "File weekly toolbox talk notes",      "description": "Scan and file the signed attendance sheet.", "priority": "low",    "status": "todo", "dueAt": "2026-09-15T13:00:00+10:00" },
+    { "id": "t5", "siteId": "s_perth",  "title": "Replace broken first aid kit stock",  "description": "Bandages and eye wash are running low.",     "priority": "high",   "status": "todo", "dueAt": "2026-09-15T12:00:00+08:00" }
+  ]
+}

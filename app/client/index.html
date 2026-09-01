@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WorkTasker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #d9d9d9;
+      color: #333;
+    }
+
+    body { display: flex; align-items: center; justify-content: center; }
+
+    .phone {
+      width: 390px; height: 780px; background: #fff;
+      border: 12px solid #333; border-radius: 36px;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+
+    .screen { flex: 1; overflow-y: auto; }
+
+    .tab-bar { display: flex; border-top: 1px solid #ccc; background: #f2f2f2; }
+    .tab-bar button {
+      flex: 1; padding: 14px 0; border: none; background: none;
+      font-size: 14px; color: #777; cursor: pointer;
+    }
+    .tab-bar button.active { color: #222; font-weight: 600; }
+
+    .header {
+      display: flex; align-items: center; height: 64px; flex-shrink: 0;
+      padding: 0 16px; border-bottom: 1px solid #ddd;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; flex: 1; }
+    .header .back-btn {
+      display: flex; align-items: center; gap: 10px; border: none; background: none;
+      font-size: 15px; color: #555; cursor: pointer; padding: 0 12px 0 0;
+    }
+    .header .back-btn .chevron { color: #999; font-size: 18px; }
+    .header .add-btn {
+      border: 1px solid #bbb; background: #f5f5f5; border-radius: 6px;
+      width: 36px; height: 36px; font-size: 20px; color: #444; cursor: pointer;
+    }
+
+    .content { padding: 16px; }
+    .greeting { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+    .summary { font-size: 15px; color: #666; margin-bottom: 20px; }
+
+    .home-list { list-style: none; }
+    .home-list li { padding: 10px 0; border-bottom: 1px solid #eee; font-size: 15px; }
+
+    .task-list { list-style: none; }
+    .task-row {
+      display: flex; align-items: center; padding: 14px 16px;
+      border-bottom: 1px solid #eee; cursor: pointer;
+    }
+    .task-row input[type="checkbox"] { width: 20px; height: 20px; margin-right: 14px; flex-shrink: 0; }
+    .task-main { flex: 1; min-width: 0; }
+    .task-main .task-title { font-size: 15px; }
+    .task-main .task-title.done { text-decoration: line-through; color: #999; }
+    .task-meta { font-size: 12px; color: #888; margin-top: 3px; }
+    .task-priority {
+      font-size: 13px; color: #333; background: #e5e5e5;
+      padding: 3px 10px; border-radius: 10px; margin-left: 8px; flex-shrink: 0;
+    }
+    .badge-overdue {
+      font-size: 11px; color: #fff; background: #c0392b;
+      padding: 2px 8px; border-radius: 10px; margin-left: 8px; flex-shrink: 0;
+    }
+
+    .detail-field { margin-bottom: 18px; }
+    .detail-field .label { font-size: 13px; color: #888; margin-bottom: 4px; }
+    .detail-field .value { font-size: 15px; }
+
+    .form-field { margin-bottom: 16px; }
+    .form-field label { display: block; font-size: 13px; color: #888; margin-bottom: 6px; }
+    .form-field input[type="text"], .form-field textarea, .form-field select {
+      width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 15px; font-family: inherit; background: #fff; color: #333;
+    }
+    .form-field textarea { min-height: 90px; resize: vertical; }
+
+    .btn {
+      padding: 10px 16px; border: 1px solid #bbb; background: #f5f5f5;
+      border-radius: 6px; font-size: 15px; color: #333; cursor: pointer;
+    }
+    .btn.full { width: 100%; margin-top: 10px; }
+
+    .avatar {
+      width: 72px; height: 72px; border-radius: 50%; background: #ccc;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; color: #666; margin: 24px auto 12px;
+    }
+    .profile-name { text-align: center; font-size: 17px; font-weight: 600; margin-bottom: 24px; }
+    .settings-list { list-style: none; border-top: 1px solid #eee; }
+    .settings-list li {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid #eee; font-size: 15px; color: #444;
+    }
+    .settings-list a {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; color: inherit; text-decoration: none;
+    }
+    .settings-list .chevron { color: #999; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="screen" id="screen"></div>
+    <div class="tab-bar" id="tab-bar">
+      <button data-tab="home">Home</button>
+      <button data-tab="tasks">Tasks</button>
+      <button data-tab="profile">Profile</button>
+    </div>
+  </div>
+
+  <script>
+    var state = {
+      tasks: [],
+      sites: {},
+      summary: { dueOrOverdue: 0 },
+      activeTab: 'home',
+      currentScreen: 'home',
+      loaded: false
+    };
+
+    var screenEl = document.getElementById('screen');
+    var tabBarEl = document.getElementById('tab-bar');
+
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.textContent = text == null ? '' : text;
+      return div.innerHTML;
+    }
+
+    var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    // Format the due time as the site sees it (the offset is already in the ISO string).
+    function formatDue(dueAt) {
+      var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(dueAt);
+      if (!m) return dueAt;
+      var day = parseInt(m[3], 10);
+      var mon = MONTHS[parseInt(m[2], 10) - 1];
+      var hh = parseInt(m[4], 10);
+      var mm = m[5];
+      var ampm = hh < 12 ? 'am' : 'pm';
+      var h12 = hh % 12; if (h12 === 0) h12 = 12;
+      return day + ' ' + mon + ', ' + h12 + ':' + mm + ampm;
+    }
+
+    function siteName(siteId) {
+      return state.sites[siteId] ? state.sites[siteId].name : siteId;
+    }
+
+    function loadData() {
+      return Promise.all([
+        fetch('/api/sites').then(function (r) { return r.json(); }),
+        fetch('/api/tasks?sort=due').then(function (r) { return r.json(); }),
+        fetch('/api/tasks/summary').then(function (r) { return r.json(); })
+      ]).then(function (results) {
+        var sitesById = {};
+        (results[0].sites || []).forEach(function (s) { sitesById[s.id] = s; });
+        state.sites = sitesById;
+        state.tasks = results[1].tasks || [];
+        state.summary = results[2] || { dueOrOverdue: 0 };
+        state.loaded = true;
+      });
+    }
+
+    function render() {
+      tabBarEl.style.display = 'flex';
+      var buttons = tabBarEl.querySelectorAll('button');
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].className = buttons[i].dataset.tab === state.activeTab ? 'active' : '';
+      }
+
+      if (!state.loaded) {
+        screenEl.innerHTML = '<div class="content"><div class="summary">Loading…</div></div>';
+        return;
+      }
+
+      if (state.currentScreen === 'home') renderHome();
+      else if (state.currentScreen === 'tasks') renderTasks();
+      else if (state.currentScreen === 'profile') renderProfile();
+    }
+
+    function renderHome() {
+      var count = state.summary.dueOrOverdue;
+      var outstanding = state.tasks.filter(function (t) { return t.status !== 'done'; });
+      var listItems = outstanding.map(function (t) {
+        var badge = t.overdue ? '<span class="badge-overdue">Overdue</span>' : '';
+        return '<li>' + escapeHtml(t.title) + badge +
+          '<div class="task-meta">' + escapeHtml(siteName(t.siteId)) + ' · due ' + escapeHtml(formatDue(t.dueAt)) + '</div></li>';
+      }).join('');
+
+      screenEl.innerHTML =
+        '<div class="header"><h1>Home</h1></div>' +
+        '<div class="content">' +
+          '<div class="greeting">Hello!</div>' +
+          '<div class="summary">You have ' + count + ' task' + (count === 1 ? '' : 's') + ' due today or overdue.</div>' +
+          '<ul class="home-list">' + listItems + '</ul>' +
+        '</div>';
+    }
+
+    function renderTasks() {
+      var rows = state.tasks.map(function (t) {
+        var badge = t.overdue ? '<span class="badge-overdue">Overdue</span>' : '';
+        return (
+          '<li class="task-row" data-id="' + t.id + '">' +
+            '<input type="checkbox" data-id="' + t.id + '"' + (t.status === 'done' ? ' checked' : '') + '>' +
+            '<div class="task-main">' +
+              '<div class="task-title' + (t.status === 'done' ? ' done' : '') + '">' + escapeHtml(t.title) + '</div>' +
+              '<div class="task-meta">' + escapeHtml(siteName(t.siteId)) + ' · due ' + escapeHtml(formatDue(t.dueAt)) + '</div>' +
+            '</div>' +
+            badge +
+            '<span class="task-priority">' + escapeHtml(t.priority) + '</span>' +
+          '</li>'
+        );
+      }).join('');
+
+      screenEl.innerHTML =
+        '<div class="header"><h1>Tasks</h1></div>' +
+        '<ul class="task-list">' + rows + '</ul>';
+    }
+
+    function renderProfile() {
+      screenEl.innerHTML =
+        '<div class="header"><h1>Profile</h1></div>' +
+        '<div class="avatar">AS</div>' +
+        '<div class="profile-name">Alex Smith</div>' +
+        '<ul class="settings-list">' +
+          '<li><a href="https://github.com/sammcdonnell/worktasker" target="_blank">About<span class="chevron">&rsaquo;</span></a></li>' +
+          '<li>Log out<span class="chevron">&rsaquo;</span></li>' +
+        '</ul>';
+    }
+
+    tabBarEl.addEventListener('click', function (e) {
+      var tab = e.target.dataset.tab;
+      if (!tab) return;
+      state.activeTab = tab;
+      state.currentScreen = tab;
+      render();
+    });
+
+    render();
+    loadData().then(render).catch(function (err) {
+      screenEl.innerHTML = '<div class="content"><div class="summary">Could not reach the API. Is the server running? (cd api && npm start)</div></div>';
+      console.error(err);
+    });
+  </script>
+</body>
+</html>
