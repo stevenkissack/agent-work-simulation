@@ -1,0 +1,11 @@
+{
+  "name": "worktasker",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Work Tasker: task management for construction field crews.",
+  "scripts": {
+    "postinstall": "npm --prefix api install",
+    "start": "npm --prefix api start",
+    "test": "node --test tests/"
+  }
+}
