@@ -34,12 +34,15 @@ at a time. That's why I think the fix is architectural rather than a set of patc
 
 ## Proposal
 
-Re-architect Work Tasker around an offline-first CRDT sync engine. Three parts:
+Re-architect Work Tasker around an offline-first sync engine built on conflict-free replicated
+data types (CRDTs). Three parts:
 
-### 1. CRDTs for sync
+### 1. CRDTs (conflict-free replicated data types) for sync
 
-Each client holds a local CRDT replica of its data. Edits merge automatically with zero conflicts,
-even when several crew are offline at the same time and reconnect later. No more last-write-wins.
+Each client holds a local CRDT replica of its data: a full copy it can read and edit while offline.
+Edits merge automatically with zero conflicts, even when several crew are offline at the same time
+and reconnect later, because the merge rules are written so every replica lands on the same result
+whatever order the edits arrive in. No more last-write-wins.
 
 ### 2. Real-time sync microservice
 
